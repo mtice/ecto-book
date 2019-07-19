@@ -1,0 +1,70 @@
+Commands:
+ mix help COMMAND - info about COMMAND
+
+ # ECTO
+ mix ecto.setup - [ecto.create, ecto.migrate, run priv/repo/seeds.exs]
+ mix ecto.reset - [ecto.drop, ecto.setup] get data back to pristine state.
+
+ Repo.insert(%Artist{name: "Dizzy Gillespie"})
+ Repo.insert_all("artists",[
+     [name: "Max Roach", inserted_at: Ecto.DateTime.utc], 
+     [name: "Art Blakey", inserted_at: Ecto.DateTime.utc]
+    ], returning: [:id, :name])
+  #=> {2, [%{id: 12, name: "Max Roach"}, %{id: 13, name: "Art Blakey"}]}
+
+
+Repo.update(Ecto.Changeset.change(dizzy, name: "John Birks Gillespie"))
+Repo.update_all("artists", set: [updated_at: Ecto.DateTime.utc])
+  inc: increments given field by given value (decrement with neg number)
+  push: In columns with an array, it pushes given value onto end of array
+  pull: "" "" removes given value from array
+
+Repo.aggregate("albums", :count, :id) #=> 5
+# aggregate is count of "table"
+
+
+dizzy = Repo.get_by(Artist, name: "John Birks Gillespie")
+Repo.delete(dizzy)
+
+Repo.delete()
+Repo.delete_all("tracks")
+# WHOOPS! fix:: "mix ecto.reset"
+
+ # MIGRATION
+ mix ecto.gen.migration - generates a migration that the use can fill in with particular Commands
+ mix ecto.migrate - migrates a repository
+ mix ecto.migrations - shows all migrations and their statuses
+ mix ecto.rollback - rolls back a particular migration
+
+
+
+"priv" is like "OTP" where its name made sense at the beginning but today it has grown beyond that. All it matters now is that we put in the "priv" directory any artifact that you need in production alongside your code.
+- Jose
+
+
+# QUERIES 
+  The Query module uses Elixir macros to create a DSL (domain-specific language) that sits right in your Elixir code
+
+    SELECT t.id, t.title, a.title
+    FROM tracks t
+    JOIN albums a ON t.album_id = a.id
+    WHERE t.duration > 900;
+
+  And here’s that same query written in Ecto:
+
+  keyword syntax:
+
+    query = from t in "tracks",
+    join: a in "albums", on: t.album_id == a.id, where: t.duration > 900,
+    select: [t.id, t.title, a.title]
+
+  macro syntax:
+
+    query = "tracks"
+    |> join(:inner, [t], a in "albums", t.album_id == a.id)
+    |> where([t,a], t.duration > 900)
+    |> select([t,a], [t.id, t.title, a.title])
+
+  query = from "artists", select: [:name]
+  # from is a macro for 
+  query = Ecto.Query.from("artists", select: [:name])
